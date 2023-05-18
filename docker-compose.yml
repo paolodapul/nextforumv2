@@ -9,6 +9,8 @@ services:
       - .:/app
     ports:
       - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://admin:test@postgres:5432/nextforumv2?schema=public
   postgres:
     container_name: postgres
     image: "postgres:14-alpine"
