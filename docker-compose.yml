@@ -1,0 +1,21 @@
+version: "3.9"
+services:
+  nextforumv2:
+    container_name: nextforumv2
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+  postgres:
+    container_name: postgres
+    image: "postgres:14-alpine"
+    restart: always
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_DB=nextforumv2
+    ports:
+      - "5432:5432"
