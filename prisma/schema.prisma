@@ -17,7 +17,7 @@ model User {
   name    String?
   posts   Post[]
   threads Thread[]
-  Reply   Reply[]
+  replies Reply[]
 }
 
 model Post {
@@ -36,7 +36,7 @@ model Thread {
   title       String
   body        String?
   lastUpdated DateTime
-  Reply       Reply[]
+  replies     Reply[]
 }
 
 model Reply {

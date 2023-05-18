@@ -1,44 +1,66 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
+import _ from "lodash";
+import { faker } from "@faker-js/faker";
+
 const prisma = new PrismaClient();
 async function main() {
-  const alice = await prisma.user.upsert({
-    where: { email: "alice@prisma.io" },
-    update: {},
-    create: {
-      email: "alice@prisma.io",
-      name: "Alice",
-      posts: {
-        create: {
-          title: "Check out Prisma with Next.js",
-          content: "https://www.prisma.io/nextjs",
-          published: true,
+  const createUserWithPostsAndReplies = async () => {
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
+    const email = faker.internet.email({
+      firstName,
+      lastName,
+    });
+
+    // You cannot nest more than one level when using upsert()
+    // Pattern is: create with nest -> create entities for the deepest nest
+    //  -> update the deepest nest by connecting the created entities
+
+    const { threads } = await prisma.user.upsert({
+      where: { email: email },
+      update: {},
+      create: {
+        email: email,
+        name: firstName,
+        threads: {
+          create: [
+            {
+              title: faker.lorem.sentence(),
+              body: faker.lorem.paragraph(),
+              lastUpdated: new Date().toISOString(),
+            },
+          ],
         },
       },
-    },
-  });
-  const bob = await prisma.user.upsert({
-    where: { email: "bob@prisma.io" },
-    update: {},
-    create: {
-      email: "bob@prisma.io",
-      name: "Bob",
-      posts: {
-        create: [
-          {
-            title: "Follow Prisma on Twitter",
-            content: "https://twitter.com/prisma",
-            published: true,
-          },
-          {
-            title: "Follow Nexus on Twitter",
-            content: "https://twitter.com/nexusgql",
-            published: true,
-          },
-        ],
+      include: {
+        threads: true,
       },
-    },
-  });
-  console.log({ alice, bob });
+    });
+
+    const { id: replyId } = await prisma.reply.create({
+      data: {
+        body: faker.lorem.paragraph(),
+        lastUpdated: new Date().toISOString(),
+        threadId: threads[0].id,
+        userId: threads[0].userId,
+      },
+    });
+
+    const result = await prisma.thread.update({
+      where: {
+        id: threads[0].id,
+      },
+      data: {
+        replies: {
+          connect: {
+            id: replyId,
+          },
+        },
+      },
+    });
+  };
+
+  _.times(50, createUserWithPostsAndReplies);
 }
 main()
   .then(async () => {
