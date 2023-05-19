@@ -1,10 +1,33 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient, Thread } from "@prisma/client";
 import _ from "lodash";
 import { faker } from "@faker-js/faker";
 
 const prisma = new PrismaClient();
 async function main() {
-  const createUserWithPostsAndReplies = async () => {
+  const createThreadReplies = async (thread: Thread) => {
+    const createFakeReply = () => {
+      return {
+        body: faker.word.words(),
+        lastUpdated: new Date().toISOString(),
+        userId: thread.userId,
+      };
+    };
+
+    await prisma.thread.update({
+      where: {
+        id: thread.id,
+      },
+      data: {
+        replies: {
+          createMany: {
+            data: _.times(10, createFakeReply),
+          },
+        },
+      },
+    });
+  };
+
+  const createUser = async () => {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
     const email = faker.internet.email({
@@ -12,24 +35,37 @@ async function main() {
       lastName,
     });
 
-    // You cannot nest more than one level when using upsert()
-    // Pattern is: create with nest -> create entities for the deepest nest
-    //  -> update the deepest nest by connecting the created entities
-
-    const { threads } = await prisma.user.upsert({
-      where: { email: email },
-      update: {},
-      create: {
+    const user = await prisma.user.create({
+      data: {
         email: email,
         name: firstName,
+      },
+    });
+
+    return user.id;
+  };
+
+  const createThread = async (userId: number) => {
+    const createFakeData = () => {
+      const title = faker.word.words();
+      const body = faker.word.words();
+      const lastUpdated = new Date().toISOString();
+      return {
+        title,
+        body,
+        lastUpdated,
+      };
+    };
+
+    const { threads } = await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
         threads: {
-          create: [
-            {
-              title: faker.word.words(),
-              body: faker.word.words(),
-              lastUpdated: new Date().toISOString(),
-            },
-          ],
+          createMany: {
+            data: _.times(10, createFakeData),
+          },
         },
       },
       include: {
@@ -37,30 +73,13 @@ async function main() {
       },
     });
 
-    const { id: replyId } = await prisma.reply.create({
-      data: {
-        body: faker.word.words(),
-        lastUpdated: new Date().toISOString(),
-        threadId: threads[0].id,
-        userId: threads[0].userId,
-      },
-    });
-
-    const result = await prisma.thread.update({
-      where: {
-        id: threads[0].id,
-      },
-      data: {
-        replies: {
-          connect: {
-            id: replyId,
-          },
-        },
-      },
-    });
+    return threads;
   };
 
-  _.times(50, createUserWithPostsAndReplies);
+  const userIds = await Promise.all(_.times(10, createUser));
+  const threads = await Promise.all(userIds.map(createThread));
+  const flatThreads = threads.flatMap((thread) => thread);
+  await Promise.all(flatThreads.map(createThreadReplies));
 }
 main()
   .then(async () => {
