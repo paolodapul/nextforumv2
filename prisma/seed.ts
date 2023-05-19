@@ -25,8 +25,8 @@ async function main() {
         threads: {
           create: [
             {
-              title: faker.lorem.sentence(),
-              body: faker.lorem.paragraph(),
+              title: faker.word.words(),
+              body: faker.word.words(),
               lastUpdated: new Date().toISOString(),
             },
           ],
@@ -39,7 +39,7 @@ async function main() {
 
     const { id: replyId } = await prisma.reply.create({
       data: {
-        body: faker.lorem.paragraph(),
+        body: faker.word.words(),
         lastUpdated: new Date().toISOString(),
         threadId: threads[0].id,
         userId: threads[0].userId,
