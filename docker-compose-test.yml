@@ -12,7 +12,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://admin:test@postgres:5432/nextforumv2_testdb?schema=public
       - ENV=test
-    command: sh -c "pnpm exec prisma migrate reset --force"
+    command: sh -c "pnpm exec prisma migrate reset --force && pnpm dev"
   postgres:
     container_name: postgres
     image: "postgres:14-alpine"
