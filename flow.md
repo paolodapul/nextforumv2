@@ -1,0 +1,2 @@
+- Include running of Prisma migrations a part of your test setup prior to running tests
+- After the tests have been completed, rollback the migration
