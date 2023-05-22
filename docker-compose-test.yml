@@ -7,11 +7,13 @@ services:
       dockerfile: Dockerfile.test
     volumes:
       - .:/app
+      - /app/node_modules
     ports:
       - "3000:3000"
     environment:
       - DATABASE_URL=postgresql://admin:test@postgres:5432/nextforumv2_testdb?schema=public
       - ENV=test
+    restart: always
     command: sh -c "pnpm exec prisma migrate reset --force && pnpm dev"
   postgres:
     container_name: postgres
